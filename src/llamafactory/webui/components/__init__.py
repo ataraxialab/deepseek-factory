@@ -18,7 +18,11 @@ from .export import create_export_tab
 from .infer import create_infer_tab
 from .top import create_top
 from .train import create_train_tab
-
+from .distill import create_distill_tab
+from .train2 import create_train2_tab
+from .eval2 import create_eval2_tab
+from .segment import create_segment_tab
+from .dataset import dataset_tab
 
 __all__ = [
     "create_chat_box",
@@ -27,4 +31,9 @@ __all__ = [
     "create_infer_tab",
     "create_top",
     "create_train_tab",
+    "create_distill_tab",
+    "create_train2_tab",
+    "create_eval2_tab",
+    "create_segment_tab",
+    "dataset_tab"
 ]

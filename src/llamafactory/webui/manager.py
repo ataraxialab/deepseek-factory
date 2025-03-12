@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Dict, Generator, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Generator, List, Set, Tuple, Optional
 
 
 if TYPE_CHECKING:
@@ -58,11 +58,25 @@ class Manager:
         """
         return self._id_to_elem[elem_id]
 
+    def get_elem_by_id_safe(self, elem_id: str) -> Optional["Component"]:
+        r"""
+        Gets element by id.
+
+        Example: top.lang, train.dataset
+        """
+        return self._id_to_elem.get(elem_id)
+
     def get_id_by_elem(self, elem: "Component") -> str:
         r"""
         Gets id by element.
         """
         return self._elem_to_id[elem]
+
+    def get_id_by_elem_safe(self, elem: "Component") -> Optional[str]:
+        r"""
+        Gets id by element.
+        """
+        return self._elem_to_id.get(elem)
 
     def get_base_elems(self) -> Set["Component"]:
         r"""

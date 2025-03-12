@@ -33,7 +33,7 @@ def create_top() -> Dict[str, "Component"]:
     with gr.Row():
         lang = gr.Dropdown(choices=["en", "ru", "zh", "ko", "ja"], value=None, scale=1)
         available_models = list(SUPPORTED_MODELS.keys()) + ["Custom"]
-        model_name = gr.Dropdown(choices=available_models, value=None, scale=3)
+        model_name = gr.Dropdown(choices=available_models, allow_custom_value=True, scale=3) # adding allow_custom_value to avoid crash
         model_path = gr.Textbox(scale=3)
 
     with gr.Row():

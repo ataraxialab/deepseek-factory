@@ -41,7 +41,7 @@ class EvaluationArguments:
         metadata={"help": "Random seed to be used with data loaders."},
     )
     lang: Literal["en", "zh"] = field(
-        default="en",
+        default="zh",
         metadata={"help": "Language used at evaluation."},
     )
     n_shot: int = field(

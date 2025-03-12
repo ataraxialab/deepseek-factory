@@ -14,6 +14,7 @@
 
 import json
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from transformers.trainer_utils import get_last_checkpoint
@@ -27,11 +28,12 @@ from ..extras.constants import (
     TRAINING_STAGES,
 )
 from ..extras.packages import is_gradio_available, is_matplotlib_available
-from ..extras.ploting import gen_loss_plot
+from ..extras.ploting import gen_loss_plot, gen_loss_plot_x
 from ..model import QuantizationMethod
 from .common import DEFAULT_CONFIG_DIR, DEFAULT_DATA_DIR, get_model_path, get_save_dir, get_template, load_dataset_info
 
 
+import gradio as gr
 if is_gradio_available():
     import gradio as gr
 
@@ -129,6 +131,32 @@ def get_trainer_info(output_path: os.PathLike, do_train: bool) -> Tuple[str, "gr
 
     return running_log, running_progress, running_loss
 
+def get_trainer_info_x(output_path: os.PathLike, kind: str) -> Tuple[str, Optional["gr.Slider"], Optional["gr.Plot"]]:
+    running_log = ""
+    running_loss = None
+    running_log_path = os.path.join(output_path, RUNNING_LOG)
+    if os.path.isfile(running_log_path):
+        with open(running_log_path, encoding="utf-8") as f:
+            running_log = f.read()[-20000:]  # avoid lengthy log
+
+    pattern = r"^{.*loss.*epoch.*}$"
+    if kind.startswith("train"):
+        trainer_log: List[Dict[str, Any]] = []
+        for l in running_log.strip().split("\n"):
+            if re.search(pattern, l):
+                l = l.replace("'", '"')
+                l = l.replace("train_loss", "loss")
+                l = l.replace(": nan,", ": null,")
+                try:
+                    trainer_log.append(json.loads(l))
+                except Exception as e:
+                    #print(f"faile to load {l}, error: {str(e)}")
+                    pass
+
+        if len(trainer_log) != 0 and is_matplotlib_available():
+            running_loss = gr.Plot(gen_loss_plot_x(trainer_log))
+
+    return f"```{running_log}```", None, running_loss
 
 def list_checkpoints(model_name: str, finetuning_type: str) -> "gr.Dropdown":
     r"""
@@ -180,6 +208,33 @@ def list_datasets(dataset_dir: str = None, training_stage: str = list(TRAINING_S
     ranking = TRAINING_STAGES[training_stage] in STAGES_USE_PAIR_DATA
     datasets = [k for k, v in dataset_info.items() if v.get("ranking", False) == ranking]
     return gr.Dropdown(choices=datasets)
+
+
+def updir(ds):
+    return gr.update(value=os.path.dirname(ds))
+
+def list_files(current_dir: str):
+    if not os.path.isdir(current_dir):
+        return gr.update(choices=[])
+
+    files = [d for d in os.listdir(current_dir)]
+    if not files:
+        return gr.update(choices=[])
+
+    ret= [os.path.join(current_dir, d) for d in files]
+    return gr.update(choices=ret)
+
+def get_config(cfg: Dict, path: str, default):
+    keys = path.split('.')
+    current = cfg 
+    
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    
+    return current if not isinstance(current, dict) else default
 
 
 def list_output_dirs(model_name: Optional[str], finetuning_type: str, current_time: str) -> "gr.Dropdown":

@@ -76,6 +76,7 @@ TRAINING_ARGS = "training_args.yaml"
 
 TRAINING_STAGES = {
     "Supervised Fine-Tuning": "sft",
+    "Reinforcement Learning": "rl",
     "Reward Modeling": "rm",
     "PPO": "ppo",
     "DPO": "dpo",

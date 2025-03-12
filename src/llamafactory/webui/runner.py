@@ -15,13 +15,13 @@
 import json
 import os
 from copy import deepcopy
-from subprocess import Popen, TimeoutExpired
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
+from subprocess import Popen, TimeoutExpired, PIPE, STDOUT
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Callable, Tuple
 
 from transformers.trainer import TRAINING_ARGS_NAME
 from transformers.utils import is_torch_npu_available
 
-from ..extras.constants import LLAMABOARD_CONFIG, PEFT_METHODS, TRAINING_STAGES
+from ..extras.constants import LLAMABOARD_CONFIG, PEFT_METHODS, TRAINING_STAGES, RUNNING_LOG
 from ..extras.misc import is_gpu_or_npu_available, torch_gc, use_ray
 from ..extras.packages import is_gradio_available
 from .common import (
@@ -35,8 +35,9 @@ from .common import (
     load_eval_results,
     save_args,
     save_cmd,
+    BASH_DIR,
 )
-from .control import get_trainer_info
+from .control import get_trainer_info, get_trainer_info_x
 from .locales import ALERTS, LOCALES
 
 
@@ -61,10 +62,37 @@ class Runner:
         """ Resume """
         self.trainer: Optional["Popen"] = None
         self.do_train = True
+        self.kind = ""
         self.running_data: Dict["Component", Any] = None
         """ State """
         self.aborted = False
         self.running = False
+
+        self._parse_map: Dict[str, Callable[[Dict["Component", Any]], Dict[str, Any]]] = {
+                "distill": self._parse_distill_args,
+                "train2": self._parse_train2_args,
+                "eval2": self._parse_eval2_args,
+                "default": self._parse_dummy_args,
+                }
+
+        self._init_map: Dict[str, Callable[[Dict["Component", Any], str, bool], str]] = {
+                "train2": self._initialize_x,
+                "eval2": self._initialize_x,
+                "distill": self._initialize_x,
+                "default": self._initialize_x,
+                }
+
+        self._cmd_map: Dict[str, list[str]] = {
+                "distill": [f'{BASH_DIR}/distill.sh'],
+                "train2.sft": [f'{BASH_DIR}/sft.sh'],
+                "train2.rl": [f'{BASH_DIR}/grpo.sh'],
+                "eval2": [f'{BASH_DIR}/inference.sh'],
+                "default": ['ls'],
+                }
+        self._trainer_info_map: Dict[str, Callable[[os.PathLike, str], Tuple[str, Optional["gr.Slider"], Optional["gr.Plot"]]]] = {
+                "distill": get_trainer_info_x, 
+                "default": get_trainer_info_x, 
+        }
 
     def set_abort(self) -> None:
         self.aborted = True
@@ -515,3 +543,221 @@ class Runner:
                 output_dict[self.manager.get_elem_by_id(elem_id)] = value
 
         return output_dict
+
+    #################################################################################################### 
+    def get_parse_func(self, kind) -> Callable[[Dict["Component", Any]], Dict[str, Any]]:
+        ret = self._parse_map.get(kind)
+        return ret if ret is not None else self._parse_map["default"]
+
+    def get_init_func(self, kind) -> Callable[[Dict["Component", Any], str, bool], str]:
+        ret = self._init_map.get(kind)
+        return ret if ret is not None else self._init_map["default"]
+
+    def get_cmd_func(self, kind, stage = None) -> list[str]:
+        if stage is not None:
+            kind = f"{kind}.{stage}"
+        ret = self._cmd_map.get(kind)
+        return ret if ret is not None else self._cmd_map["default"]
+
+    def get_trainer_info_func(self, kind) -> Callable[[os.PathLike, str], Tuple[str, Optional["gr.Slider"], Optional["gr.Plot"]]]:
+        ret = self._trainer_info_map.get(kind)
+        return ret if ret is not None else get_trainer_info_x
+
+    def preview_train2(self, data):
+        yield from self._preview_x(data, "train2")
+
+    def preview_eval2(self, data):
+        yield from self._preview_x(data, "eval2")
+
+    def run_train2(self, data):
+        yield from self._launch_x(data, "train2")
+
+    def run_eval2(self, data):
+        yield from self._launch_x(data, "eval2")
+
+    def run_distill(self, data):
+        yield from self._launch_x(data, "distill")
+
+    def _parse_dummy_args(self, data: Dict["Component", Any]) -> Dict[str, Any]:
+        return {}
+
+    def _parse_train2_args(self, data: Dict["Component", Any]) -> Dict[str, Any]:
+        get = lambda elem_id: data[self.manager.get_elem_by_id(elem_id)]
+        args = dict(
+            stage=TRAINING_STAGES[get("train2.training_stage")],
+            model_name_or_path=get("train2.model"),
+            dataset_id_or_path = get("train2.dataset"),                  # rl only
+            num_generations=int(get("train2.num_generations")),
+            max_prompt_length=int(get("train2.max_prompt_length")),           # rl only
+            gpu_memory_utilization=float(get("train2.gpu_memory_utilization")),
+            max_grad_norm=float(get("train2.max_grad_norm")),
+            dataset_name = get("train2.dataset"),
+            learning_rate=float(get("train2.learning_rate")),
+            warmup_ratio=float(get("train2.warmup_ratio")),
+            per_device_train_batch_size=int(get("train2.per_device_train_batch_size")),
+            num_train_epochs=int(get("train2.num_train_epochs")),
+            gradient_accumulation_steps=int(get("train2.gradient_accumulation_steps")),
+            save_steps=int(get("train2.save_steps")),
+            logging_steps=int(get("train2.logging_steps")),
+            max_seq_length=int(get("train2.max_seq_length")),
+            lora_rank=int(get("train2.lora_rank")),
+            lora_alpha=int(get("train2.lora_alpha")),
+            random_state=int(get("train2.random_state")),
+            system_prompt = get("train2.system_prompt"),
+            output_dir=get("train2.output_dir"),
+        )
+        return args
+
+    def _parse_eval2_args(self, data: Dict["Component", Any]) -> Dict[str, Any]:
+        get = lambda elem_id: data[self.manager.get_elem_by_id(elem_id)]
+        args = dict(
+            dataset_id_or_path=get("eval2.dataset"),
+            model_name_or_path=get("eval2.model"),
+            #system_prompt = get("eval2.system_prompt").replace("\n", " "),
+            system_prompt = get("eval2.system_prompt"),
+            output_dir=get("eval2.output_dir"),
+        )
+        return args
+    
+    def _parse_distill_args(self, data: Dict["Component", Any]) -> Dict[str, Any]:
+        r"""
+        Builds and validates the evaluation arguments.
+        """
+        get = lambda elem_id: data[self.manager.get_elem_by_id(elem_id)]
+        args = dict(
+            dataset_src_path=get("distill.dataset"),
+            dataset_dst_path=get("distill.output_dir"),
+            api_key=get("distill.api_key"),
+            base_url=get("distill.base_url"),
+            model=get("distill.model"),
+            #system_prompt = get("distill.system_prompt").replace("\n", " "),
+            system_prompt = get("distill.system_prompt"),
+            output_dir=get("distill.output_dir")
+        )
+        return args
+
+    def gen_cmd_x(self, args: Dict[str, Any], kind: str = None) -> str:
+        r"""
+        Generates CLI custom commands for previewing.
+        """
+        c = self.get_cmd_func(kind, args.get("stage", None))
+        cmds = c + [(save_cmd(args)), "fake"]
+        process = Popen(
+            cmds,
+            stdout=PIPE,
+            stderr=STDOUT,
+            text=True
+        )
+
+        stdout, _ = process.communicate()
+        return f"```{stdout}```"
+
+    def _initialize_x(self, data: Dict["Component", Any], kind: str, from_preview: bool) -> str:
+        get = lambda elem_id: data[self.manager.get_elem_by_id(elem_id)]
+        if self.running:
+            return ALERTS["err_conflict"]["zh"]
+
+        if not self.manager.get_elem_by_id_safe(f"{kind}.output_dir"):
+            return ALERTS["err_no_output_dir"]["zh"]
+
+        model = get(f"{kind}.model")
+        output_dir = get(f"{kind}.output_dir")
+
+        if model and output_dir and model == output_dir:
+            return ALERTS["err_model_output_same"]["zh"]
+
+        #err_model_output_same
+        return ""
+
+    def _preview_x(self, data: Dict["Component", Any], kind: str) -> Generator[Dict["Component", str], None, None]:
+        r"""
+        Previews the training commands.
+        """
+        output_box = self.manager.get_elem_by_id(f"{kind}.output_box")
+        error = self.get_init_func(kind)(data, kind, True)
+        if error:
+            gr.Warning(error)
+            yield {output_box: error}
+        else:
+            args = self.get_parse_func(kind)(data)
+            os.makedirs(args["output_dir"], exist_ok=True)
+            yield {output_box: self.gen_cmd_x(args, kind)}
+
+    def _launch_x(self, data: Dict["Component", Any], kind: str) -> Generator[Dict["Component", Any], None, None]:
+        r"""
+        Starts the training process.
+        """
+        output_box = self.manager.get_elem_by_id(f"{kind}.output_box")
+        error = self.get_init_func(kind)(data, kind, False)
+        if error:
+            gr.Warning(error)
+            yield {output_box: error}
+        else:
+            self.kind , self.running_data = kind, data
+            args = self.get_parse_func(kind)(data)
+
+            os.makedirs(args["output_dir"], exist_ok=True)
+            c = self.get_cmd_func(kind, args.get("stage", None))
+            cmds = c + [save_cmd(args)]
+            f = f"{get_save_dir(args['output_dir'])}/{RUNNING_LOG}"
+            if not os.path.exists(f):
+                with open(f, "w"):
+                    pass
+
+            self.trainer = Popen(cmds)
+            yield from self.monitor_x()
+
+    def monitor_x(self):
+        r"""
+        Monitors the training progress and logs.
+        """
+        self.aborted = False
+        self.running = True
+
+        lang = "zh"
+        get = lambda elem_id: self.running_data[self.manager.get_elem_by_id(elem_id)]
+        output_dir = get("{}.output_dir".format(self.kind))
+        output_path = get_save_dir(output_dir)
+
+        output_box = self.manager.get_elem_by_id(f"{self.kind}.output_box")
+        progress_bar = self.manager.get_elem_by_id_safe(f"{self.kind}.progress_bar")
+        loss_viewer = self.manager.get_elem_by_id_safe(f"{self.kind}.loss_viewer")
+
+        running_log = ""
+        while self.trainer is not None:
+            if self.aborted:
+                return_dict = {
+                    output_box: ALERTS["info_aborting"][lang],
+                }
+                if progress_bar is not None:
+                    return_dict[progress_bar] = gr.Slider(visible=False)
+                yield return_dict
+
+            else:
+                running_log, running_progress, running_loss = self.get_trainer_info_func(self.kind)(output_path, self.kind)
+                return_dict = {
+                    output_box: running_log,
+                }
+                if progress_bar is not None and running_progress is not None:
+                    return_dict[progress_bar] = running_progress
+                if running_loss is not None and loss_viewer is not None:
+                    return_dict[loss_viewer] = running_loss
+
+                yield return_dict
+
+            try:
+                self.trainer.wait(2)
+                self.trainer = None
+            except TimeoutExpired:
+                continue
+
+        finish_info = ALERTS["info_finished"][lang]
+
+        return_dict = {
+            output_box: "```\n{}\n\n{}\n```".format(self._finalize(lang, finish_info), running_log),
+        }
+        if progress_bar is not None:
+            return_dict[progress_bar] = gr.Slider(visible=False)
+
+        yield return_dict
+

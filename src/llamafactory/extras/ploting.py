@@ -69,6 +69,24 @@ def gen_loss_plot(trainer_log: List[Dict[str, Any]]) -> "matplotlib.figure.Figur
     ax.set_ylabel("loss")
     return fig
 
+def gen_loss_plot_x(trainer_log: List[Dict[str, Any]]) -> "matplotlib.figure.Figure":
+    plt.close("all")
+    plt.switch_backend("agg")
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    epochs, losses = [], []
+    for log in trainer_log:
+        if log.get("loss", None):
+            epochs.append(log["epoch"])
+            losses.append(log["loss"])
+
+    ax.plot(epochs, losses, color="#1f77b4", alpha=0.4, label="original")
+    ax.plot(epochs, smooth(losses), color="#1f77b4", label="smoothed")
+    ax.legend()
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("loss")
+    return fig
+
 
 def plot_loss(save_dictionary: str, keys: List[str] = ["loss"]) -> None:
     r"""

@@ -39,8 +39,16 @@ logger = logging.get_logger(__name__)
 DEFAULT_CACHE_DIR = "cache"
 DEFAULT_CONFIG_DIR = "config"
 DEFAULT_DATA_DIR = "data"
-DEFAULT_SAVE_DIR = "saves"
+DEFAULT_SAVE_DIR = "/openr1_data/saves"
 USER_CONFIG = "user_config.yaml"
+BASH_DIR = "/workspace/unsloth_train"
+
+class ArgsManager:
+    r"""
+    A class to manage the running status of the trainers.
+    """
+    def __init__(self, initArgs) -> None:
+        self.args = initArgs
 
 
 def abort_process(pid: int) -> None:

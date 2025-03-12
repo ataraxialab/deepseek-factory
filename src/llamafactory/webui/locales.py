@@ -244,8 +244,8 @@ LOCALES = {
             "info": "Путь к директории данных.",
         },
         "zh": {
-            "label": "数据路径",
-            "info": "数据文件夹的路径。",
+            "label": "源数据文件存放路径",
+            "info": "数据文件夹的路径",
         },
         "ko": {
             "label": "데이터 디렉토리",
@@ -258,21 +258,43 @@ LOCALES = {
     },
     "dataset": {
         "en": {
-            "label": "Dataset",
+            "label": "Training Dataset",
+            "info": "Select data files."
         },
         "ru": {
             "label": "Набор данных",
+            "info": "Выберите файлы данных в этой папке. Поддерживается множественный выбор."
         },
         "zh": {
-            "label": "数据集",
+            "label": "训练数据集名称",
+            "info": "选择数据文件"
         },
         "ko": {
             "label": "데이터셋",
+            "info": "이 폴더 내의 데이터 파일을 선택합니다. 다중 선택이 가능합니다."
         },
         "ja": {
             "label": "データセット",
-        },
+            "info": "このフォルダ内のデータファイルを選択します。複数選択が可能です。"
+        }
     },
+    "dataset_out": {
+		"en": {
+			"label": "Dataset or output file"
+		},
+		"ru": {
+			"label": "Вывод набора данных",
+		},
+		"zh": {
+			"label": "输出数据集或文件名称"
+		},
+		"ko": {
+			"label": "데이터셋 출력",
+		},
+		"ja": {
+			"label": "データセット出力",
+		}
+	},
     "data_preview_btn": {
         "en": {
             "value": "Preview dataset",
@@ -414,6 +436,28 @@ LOCALES = {
             "info": "AdamW の初期学習率。",
         },
     },
+    "train_test_split_ratio": {
+        "en": {
+            "label": "Data split ratio",
+            "info": "The ratio of the dataset to be used for training."
+        },
+        "ru": {
+            "label": "Соотношение раздела данных",
+            "info": "Соотношение данных, используемых для обучения."
+        },
+        "zh": {
+            "label": "数据分割比例",
+            "info": "用于训练的数据集比例。"
+        },
+        "ko": {
+            "label": "데이터 분할 비율",
+            "info": "훈련에 사용할 데이터의 비율."
+        },
+        "ja": {
+            "label": "データ分割比率",
+            "info": "訓練に使用されるデータセットの比率。"
+        }
+    },
     "num_train_epochs": {
         "en": {
             "label": "Epochs",
@@ -546,9 +590,227 @@ LOCALES = {
             "info": "各 GPU で処理されるサンプル数。",
         },
     },
+    "per_device_train_batch_size": {
+        "en": {
+            "label": "batch size",
+            "info": "batch size.",
+        },
+        "ru": {
+            "label": "Размер пакета",
+            "info": "Количество образцов для обработки на каждом GPU.",
+        },
+        "zh": {
+            "label": "批处理大小",
+            "info": "每次理的样本数量。",
+        },
+        "ko": {
+            "label": "배치 크기",
+            "info": "각 GPU에서 처리되는 샘플 수.",
+        },
+        "ja": {
+            "label": "バッチサイズ",
+            "info": "各 GPU で処理されるサンプル数。",
+        },
+    },
+    "num_processes":{
+        "en": {
+            "label": "Number of GPUs",
+            "info": "Number of GPUs used."
+        },
+        "ru": {
+            "label": "Количество GPU",
+            "info": "Количество используемых GPU."
+        },
+        "zh": {
+            "label": "GPU数量",
+            "info": "使用的GPU数量。"
+        },
+        "ko": {
+            "label": "GPU 수",
+            "info": "사용되는 GPU의 수입니다."
+        },
+        "ja": {
+            "label": "GPUの数",
+            "info": "使用されるGPUの数です。"
+        }
+    },
+    "max_seq_length": {
+        "en": {
+            "label": "Max sequence length",
+            "info": "The length of the sequence processed ."
+        },
+        "ru": {
+            "label": "Размер последовательности",
+            "info": "Длина последовательности, обрабатываемой на каждом GPU."
+        },
+        "zh": {
+            "label": "序列长度",
+            "info": "每次处理的序列长度。"
+        },
+        "ko": {
+            "label": "시퀀스 크기",
+            "info": "각 GPU에서 처리되는 시퀀스의 길이입니다."
+        },
+        "ja": {
+            "label": "シーケンスサイズ",
+            "info": "各GPUで処理されるシーケンスの長さです。"
+        }
+    },
+     "max_steps": {
+        "en": {
+            "label": "Step length",
+            "info": "The length of each step in the process."
+        },
+        "ru": {
+            "label": "Длина шага",
+            "info": "Длина каждого шага в процессе."
+        },
+        "zh": {
+            "label": "步长",
+            "info": "每个步骤的长度。"
+        },
+        "ko": {
+            "label": "스텝 길이",
+            "info": "프로세스에서 각 스텝의 길이입니다."
+        },
+        "ja": {
+            "label": "ステップ長",
+            "info": "プロセスにおける各ステップの長さです。"
+        }
+    },
+    "num_generations": {
+        "en": {
+            "label": "Number generations",
+            "info": "The number of generation steps for training."
+        },
+        "zh": {
+            "label": "生成数量",
+            "info": "生成数量"
+        }
+    },
+    "system_prompt": {
+        "en": {
+            "label": "System Prompt",
+            "info": "System Prompt."
+        },
+        "zh": {
+            "label": "系统提示",
+            "info": "系统提示"
+        }
+    },
+    "max_prompt_length": {
+        "en": {
+            "label": "Max prompt length",
+            "info": "The maximum length of the input prompt."
+        },
+        "ru": {
+            "label": "Длина подсказки",
+            "info": "Максимальная длина входной подсказки."
+        },
+        "zh": {
+            "label": "提示词长度",
+            "info": "输入提示词的最大长度。"
+        },
+        "ko": {
+            "label": "프롬프트 길이",
+            "info": "입력 프롬프트의 최대 길이입니다."
+        },
+        "ja": {
+            "label": "プロンプト長",
+            "info": "入力プロンプトの最大長さです。"
+        }
+    },
+    "max_completion_length": {
+        "en": {
+            "label": "Max completion length",
+            "info": "The maximum length of the generated completion."
+        },
+        "ru": {
+            "label": "Длина завершения",
+            "info": "Максимальная длина сгенерированного завершения."
+        },
+        "zh": {
+            "label": "完成长度",
+            "info": "生成完成内容的最大长度。"
+        },
+        "ko": {
+            "label": "완료 길이",
+            "info": "생성된 완료의 최대 길이입니다."
+        },
+        "ja": {
+            "label": "完了長",
+            "info": "生成された完了の最大長さです。"
+        }
+    },
+     "dtype": {
+        "en": {
+            "label": "dtype",
+            "info": "The data type used for computations."
+        },
+        "ru": {
+            "label": "Тип данных",
+            "info": "Тип данных, используемый для вычислений."
+        },
+        "zh": {
+            "label": "dtype",
+            "info": "用于计算的数据类型。"
+        },
+        "ko": {
+            "label": "데이터 유형",
+            "info": "계산에 사용되는 데이터 유형입니다."
+        },
+        "ja": {
+            "label": "データ型",
+            "info": "計算に使用されるデータ型です。"
+        }
+    },
+    "max_model_length": {
+        "en": {
+            "label": "max_model_length",
+            "info": "The maximum length supported by the model."
+        },
+        "ru": {
+            "label": "Максимальная длина модели",
+            "info": "Максимальная длина, поддерживаемая моделью."
+        },
+        "zh": {
+            "label": "max_model_length",
+            "info": "模型支持的最大长度。"
+        },
+        "ko": {
+            "label": "최대 모델 길이",
+            "info": "모델에서 지원하는 최대 길이입니다."
+        },
+        "ja": {
+            "label": "最大モデル長",
+            "info": "モデルがサポートする最大長さです。"
+        }
+    },
+    "gpu_memory_utilisation": {
+        "en": {
+            "label": "gpu_memory_utilisation",
+            "info": "The percentage of GPU memory in use."
+        },
+        "ru": {
+            "label": "Использование памяти GPU",
+            "info": "Процент использования памяти GPU."
+        },
+        "zh": {
+            "label": "GPU 内存利用率",
+            "info": "GPU 内存的使用百分比。"
+        },
+        "ko": {
+            "label": "GPU 메모리 사용률",
+            "info": "GPU 메모리의 사용 비율입니다."
+        },
+        "ja": {
+            "label": "GPUメモリ使用率",
+            "info": "GPUメモリの使用率です。"
+        }
+    },
     "gradient_accumulation_steps": {
         "en": {
-            "label": "Gradient accumulation",
+            "label": "Gradient accumulation steps",
             "info": "Number of steps for gradient accumulation.",
         },
         "ru": {
@@ -695,6 +957,36 @@ LOCALES = {
             "info": "ウォームアップに使用されるステップ数。",
         },
     },
+    "gpu_memory_utilization": {
+        "en": {
+            "label": "GPU memory utilisation",
+            "info": "GPU memory utilisation.",
+        },
+        "zh": {
+            "label": "GPU显存使用百分比",
+            "info": "GPU显存使用百分比.",
+        },
+    },
+    "warmup_ratio": {
+        "en": {
+            "label": "warmup ratio",
+            "info": "warmup ratio.",
+        },
+        "zh": {
+            "label": "warmup比例",
+            "info": "warmup比例",
+        },
+    },
+    "random_state": {
+        "en": {
+            "label": "random state",
+            "info": "random state.",
+        },
+        "zh": {
+            "label": "随机状态",
+            "info": "随机状态",
+        },
+    },
     "neftune_alpha": {
         "en": {
             "label": "NEFTune alpha",
@@ -760,6 +1052,116 @@ LOCALES = {
             "label": "シーケンスパッキング",
             "info": "シーケンスを固定長のサンプルにパッキングします。",
         },
+    },
+   "mount_dir": {
+        "en": {
+            "label": "Dataset Mount Path",
+            "info": "Please select the mount path for the dataset."
+        },
+        "ru": {
+            "label": "Путь монтирования набора данных",
+            "info": "Выберите путь монтирования для набора данных."
+        },
+        "zh": {
+            "label": "数据集挂载路径",
+            "info": "请输入模型挂载路径。"
+        },
+        "ko": {
+            "label": "데이터셋 마운트 경로",
+            "info": "데이터셋의 마운트 경로를 선택해 주세요."
+        },
+        "ja": {
+            "label": "データセットのマウントパス",
+            "info": "データセットのマウントパスを選択してください。"
+        }
+    },
+    "dataset_dst_path": {
+        "en": {
+        "label": "Dataset Destination Path",
+        "info": "Please select the destination path for the dataset."
+        },
+        "ru": {
+        "label": "Путь назначения набора данных",
+        "info": "Выберите целевой путь для набора данных."
+        },
+        "zh": {
+        "label": "生成数据集目标路径",
+        "info": "请选择数据集的目标路径。"
+        },
+        "ko": {
+        "label": "데이터셋 대상 경로",
+        "info": "데이터셋의 대상 경로를 선택해 주세요."
+        },
+        "ja": {
+        "label": "データセットの宛先パス",
+        "info": "データセットの宛先パスを選択してください。"
+        }
+    },
+    "api_key": {
+        "en": {
+        "label": "API Key",
+        "info": "Please enter your API key."
+        },
+        "ru": {
+        "label": "API-ключ",
+        "info": "Введите свой API-ключ."
+        },
+        "zh": {
+        "label": "API密钥",
+        "info": "请输入您的API密钥。"
+        },
+        "ko": {
+        "label": "API 키",
+        "info": "API 키를 입력해 주세요."
+        },
+        "ja": {
+        "label": "APIキー",
+        "info": "APIキーを入力してください。"
+        }
+    },
+    "base_url": {
+        "en": {
+        "label": "API URL",
+        "info": "Please enter the API URL."
+        },
+        "ru": {
+        "label": "Базовый URL",
+        "info": "Введите базовый URL."
+        },
+        "zh": {
+        "label": "基础网址",
+        "info": "请输入基础网址。"
+        },
+        "ko": {
+        "label": "기본 URL",
+        "info": "기본 URL을 입력해 주세요."
+        },
+        "ja": {
+        "label": "基本URL",
+        "info": "基本URLを入力してください。"
+        }
+    },
+    "model": {
+        "en": {
+        "label": "Base Model",
+        "info": "Please select the base model."
+        },
+        "ru": {
+        "label": "Базовая модель",
+        "info": "Выберите базовую модель."
+        },
+        "zh": {
+        "label": "基础模型",
+        "info": "请选择基础模型。"
+        },
+        "ko": {
+        "label": "기본 모델",
+        "info": "기본 모델을 선택해 주세요."
+        },
+        "ja": {
+        "label": "基本モデル",
+        "info": "基本モデルを選択してください。"
+        }
     },
     "neat_packing": {
         "en": {
@@ -1911,6 +2313,23 @@ LOCALES = {
             "value": "コマンドをプレビュー",
         },
     },
+    "cmd_segment_btn": {
+       "en": {
+        "value": "Segment"
+        },
+        "ru": {
+            "value": "Разделить"
+        },
+        "zh": {
+            "value": "拆分"
+        },
+        "ko": {
+            "value": "분할"
+        },
+        "ja": {
+            "value": "分割"
+        }
+    },
     "arg_save_btn": {
         "en": {
             "value": "Save arguments",
@@ -2708,6 +3127,10 @@ ALERTS = {
         "zh": "未找到配置文件。",
         "ko": "Config 파일을 찾을 수 없습니다.",
         "ja": "設定ファイルが見つかりません。",
+    },
+    "err_model_output_same": {
+        "en": "Model and output path can not be the same.",
+        "zh": "输入模型路径和输出路径不能相同。",
     },
     "warn_no_cuda": {
         "en": "CUDA environment was not detected.",

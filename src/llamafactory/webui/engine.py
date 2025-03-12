@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
 from typing import TYPE_CHECKING, Any, Dict
 
 from .chatter import WebChatModel
-from .common import create_ds_config, get_time, load_config
+from .common import create_ds_config, get_time, load_config, ArgsManager, BASH_DIR
 from .locales import LOCALES
 from .manager import Manager
 from .runner import Runner
@@ -24,6 +26,13 @@ from .runner import Runner
 if TYPE_CHECKING:
     from gradio.components import Component
 
+def get_args():
+    file_path = f"{BASH_DIR}/init.json"
+    if not os.path.exists(file_path):
+        return {}
+    with open(file_path, encoding="utf-8") as f:
+        file_content = f.read()
+    return json.loads(file_content)
 
 class Engine:
     r"""
@@ -35,6 +44,7 @@ class Engine:
         self.pure_chat = pure_chat
         self.manager = Manager()
         self.runner = Runner(self.manager, demo_mode)
+        self.ArgsManager = ArgsManager(get_args())
         self.chatter = WebChatModel(self.manager, demo_mode, lazy_init=(not pure_chat))
         if not demo_mode:
             create_ds_config()
@@ -55,16 +65,17 @@ class Engine:
         Gets the initial value of gradio components and restores training status if necessary.
         """
         user_config = load_config() if not self.demo_mode else {}  # do not use config in demo mode
-        lang = user_config.get("lang", None) or "en"
-        init_dict = {"top.lang": {"value": lang}, "infer.chat_box": {"visible": self.chatter.loaded}}
+        lang = user_config.get("lang", None) or "zh"
+        #init_dict = {"top.lang": {"value": lang}, "infer.chat_box": {"visible": self.chatter.loaded}}
+        init_dict = {"top.lang": {"value": lang}}
 
         if not self.pure_chat:
             current_time = get_time()
-            init_dict["train.current_time"] = {"value": current_time}
-            init_dict["train.output_dir"] = {"value": f"train_{current_time}"}
-            init_dict["train.config_path"] = {"value": f"{current_time}.yaml"}
-            init_dict["eval.output_dir"] = {"value": f"eval_{current_time}"}
-            init_dict["infer.mm_box"] = {"visible": False}
+            #init_dict["train.current_time"] = {"value": current_time}
+            #init_dict["train.output_dir"] = {"value": f"train_{current_time}"}
+            #init_dict["train.config_path"] = {"value": f"{current_time}.yaml"}
+            #init_dict["eval.output_dir"] = {"value": f"eval_{current_time}"}
+            #init_dict["infer.mm_box"] = {"visible": False}
 
             if user_config.get("last_model", None):
                 init_dict["top.model_name"] = {"value": user_config["last_model"]}
@@ -73,10 +84,10 @@ class Engine:
 
         if self.runner.running and not self.demo_mode and not self.pure_chat:
             yield {elem: elem.__class__(value=value) for elem, value in self.runner.running_data.items()}
-            if self.runner.do_train:
-                yield self._update_component({"train.resume_btn": {"value": True}})
-            else:
-                yield self._update_component({"eval.resume_btn": {"value": True}})
+            #if self.runner.do_train:
+            #    yield self._update_component({"train.resume_btn": {"value": True}})
+            #else:
+            #    yield self._update_component({"eval.resume_btn": {"value": True}})
 
     def change_lang(self, lang: str):
         r"""
@@ -84,6 +95,18 @@ class Engine:
         """
         return {
             elem: elem.__class__(**LOCALES[elem_name][lang])
+            for elem_name, elem in self.manager.get_elem_iter()
+            if elem_name in LOCALES
+        }
+
+    def change_lang_ex(self, lang: str, ex: set[str]):
+        r"""
+        Updates the displayed language of gradio components.
+        """
+        return {
+            elem: elem.__class__(**{
+                k: v for k, v in LOCALES[elem_name][("en" if elem_name in ex else lang)].items()
+            })
             for elem_name, elem in self.manager.get_elem_iter()
             if elem_name in LOCALES
         }

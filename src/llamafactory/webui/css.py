@@ -61,6 +61,30 @@ CSS = r"""
   padding: 10px;
 }
 
+.scroll-box{
+  max-height: 800px; 
+  overflow-y: auto; 
+  border: 1px solid #ccc; padding: 5px;
+}
+
+.modal-box .options{
+  top: auto !important;
+}
+
+.chatbot{
+ display: none;
+}
+
+.hidden-border input, .hidden-border .form, .hidden-border textarea {
+  border: none !important;
+  padding: 0;
+}
+
+.dropdown-right-align {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .dark .modal-box {
   border: 2px solid white !important;
 }
