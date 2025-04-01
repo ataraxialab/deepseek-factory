@@ -1,0 +1,23 @@
+services:
+  deepseekfactory:
+    build:
+      dockerfile: ./docker/docker-metax/Dockerfile
+      context: ../..
+      args:
+        INSTALL_DEEPSPEED: false
+        PIP_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
+    container_name: deepseekfactory
+    volumes:
+      - $HOME:/openr1_data 
+    ports:
+      - "7860:7860"
+      - "8000:8000"
+    ipc: host
+    tty: true
+    shm_size: '16gb'
+    stdin_open: true
+    command: bash
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/mxcd:/dev/mxcd
+    restart: unless-stopped
