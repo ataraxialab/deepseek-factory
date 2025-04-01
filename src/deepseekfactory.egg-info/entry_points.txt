@@ -1,0 +1,3 @@
+[console_scripts]
+deepseekfactory-cli = deepseekfactory.cli:main
+lmf = deepseekfactory.cli:main
