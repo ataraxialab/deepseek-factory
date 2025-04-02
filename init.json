@@ -2,6 +2,7 @@
   "data_mount_dir": "/openr1_data",
   "system_prompt": "A conversation between User and Assistant. The user asks a question, and the Assistant solves it.\nThe assistant first thinks about the reasoning process in the mind and then provides the user with the answer.\nThe reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e.\n<think> reasoning process here </think><answer> answer here </answer>.\nIn the answer, only output the calculated number and yes or no, without including the process or any other explanations.",
   "models": {
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": "/openr1_data/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
     "Llama/Meta-Llama-3.1-8B-Instruct": "/openr1_data/Llama/Meta-Llama-3.1-8B-Instruct",
     "Qwen2.5-1.5B-Instruct": "/openr1_data/Qwen/Qwen2.5-1.5B-Instruct"
   },
