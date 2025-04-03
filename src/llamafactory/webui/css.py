@@ -100,12 +100,12 @@ CSS = r"""
 
 .overlay-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 49px;
+    right: 20px;
     z-index: 1;
     width: 20px;
     height: 20px;
-    padding: 0;
+    padding: 0 10px;
     font-size: 12px;
     background-color: #808080;
     color: white;
@@ -116,5 +116,38 @@ CSS = r"""
 
 .overlay-button:hover {
     background-color: #45a049;
+}
+
+.caret {
+    cursor: pointer;
+}
+
+.list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.list-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+div.hide-container.tree{
+    position: absolute;
+    top: 68px;
+    backaground: var(--body-background-fill);
+    z-index: 999;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.list-container{
+    background: var(--body-background-fill);
 }
 """

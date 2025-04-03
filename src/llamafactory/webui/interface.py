@@ -23,6 +23,7 @@ from .components import (
     create_eval_tab,
 )
 from .css import CSS
+from .js import JS
 from .engine import Engine
 
 
@@ -35,7 +36,7 @@ def create_ui(demo_mode: bool = False) -> "gr.Blocks":
     engine = Engine(demo_mode=demo_mode, pure_chat=False)
     hostname = os.getenv("HOSTNAME", os.getenv("COMPUTERNAME", platform.node())).split(".")[0]
 
-    with gr.Blocks(title=f"Deepseek-Factory ({hostname})", css=CSS) as demo:
+    with gr.Blocks(title=f"Deepseek-Factory ({hostname})", css=CSS, js=JS) as demo:
         lang = gr.Dropdown(choices=["en", "zh"], value="en", visible=False)
         template = gr.Dropdown(choices=["qwen", "baichuan"], value="qwen", visible=False)
         engine.manager.add_elems("global", dict(lang=lang, template=template))

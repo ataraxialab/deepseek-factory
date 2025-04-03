@@ -14,6 +14,8 @@
 
 from yaml import safe_dump
 from typing import TYPE_CHECKING, Dict, Optional, Any
+
+from .selector import create_dir_selector
 from ...extras.packages import is_gradio_available
 from ..control import list_files, updir
 from ..common import get_save_dir, get_time, WORKSPACE, get_init_config
@@ -43,22 +45,18 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
             model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", value=mk, multiselect=False, scale=3)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, 
-                                             value=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), scale=7)
-            mnbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+            model_name_or_path = create_dir_selector(base_path=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), showDirs=True)
 
     with gr.Row():
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            eval_dataset= gr.Dropdown(multiselect=False, allow_custom_value=True, 
-                                    value=initArgs.get("data_mount_dir", WORKSPACE), scale=8)
-            upbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+            eval_dataset = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE), label="Dataset")
         with gr.Column(min_width=70):
             previewbtn: gr.Button = gr.Button(value="preview", min_width=70)
             editbtn: gr.Button = gr.Button(visible=False, value="edit", min_width=70)
 
     input_elems.update({model_name_or_path, eval_dataset})
-    elem_dict.update(dict(model=model, model_name_or_path=model_name_or_path, mnbtn=mnbtn, 
-                          eval_dataset=eval_dataset, upbtn=upbtn, previewbtn=previewbtn, editbtn=editbtn))
+    elem_dict.update(dict(model=model, model_name_or_path=model_name_or_path, 
+                          eval_dataset=eval_dataset, previewbtn=previewbtn, editbtn=editbtn))
 
     with gr.Row():
         preview_elems = create_preview_box(eval_dataset, previewbtn, editbtn)
@@ -106,14 +104,10 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
         with gr.Column(scale=4):
             with gr.Row():
                 with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-                    config_path = gr.Dropdown(label="config_path", multiselect=False, allow_custom_value=True, 
-                                             value=get_save_dir(f"eval_{get_time()}"), scale=9)
-                    cfgpathbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+                    config_path = create_dir_selector(base_path=get_save_dir(f"eval_{get_time()}"), label="config_path", showDirs=True)
             with gr.Row():
                 with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-                    output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, 
-                                             value=get_save_dir(f"eval_{get_time()}"), scale=9)
-                    odirbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+                    output_dir = create_dir_selector(base_path=get_save_dir(f"eval_{get_time()}"), label="output_dir", showDirs=True)
         with gr.Column(scale=2):
             loss_viewer = gr.Plot()
 
@@ -132,9 +126,7 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
             start_btn=start_btn,
             stop_btn=stop_btn,
             output_dir=output_dir,
-            odirbtn=odirbtn,
             config_path=config_path, 
-            cfgpathbtn=odirbtn,
             progress_bar=progress_bar,
             loss_viewer=loss_viewer,
             system_prompt=system_prompt,
@@ -152,17 +144,6 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
     start_btn.click(_run, input_elems, output_elems)
 
     stop_btn.click(engine.runner.set_abort)
-
-    model_name_or_path.focus(list_files, [model_name_or_path], [model_name_or_path], queue=False)
-    mnbtn.click(updir, inputs=[model_name_or_path], outputs=[model_name_or_path], concurrency_limit=None)
-
-    eval_dataset.focus(list_files, [eval_dataset], [eval_dataset], queue=False)
-    upbtn.click(updir, inputs=[eval_dataset], outputs=[eval_dataset], concurrency_limit=None)
-
-    output_dir.focus(list_files, [output_dir], [output_dir], queue=False)
-    odirbtn.click(updir, inputs=[output_dir], outputs=[output_dir], concurrency_limit=None)
-    config_path.focus(list_files, [config_path], [config_path], queue=False)
-    cfgpathbtn.click(updir, inputs=[config_path], outputs=[config_path], concurrency_limit=None)
 
     return elem_dict
 

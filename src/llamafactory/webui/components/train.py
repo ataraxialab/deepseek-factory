@@ -14,6 +14,8 @@
 
 from yaml import safe_dump
 from typing import TYPE_CHECKING, Dict, Any, Optional
+
+from .selector import create_dir_selector
 from ...extras.constants import TRAINING_STAGES
 from ...extras.packages import is_gradio_available
 from ..control import list_dirs, list_files, updir
@@ -48,16 +50,11 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
             model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", value=mk, 
                                 multiselect=False, scale=3)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, 
-                                             value=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), scale=7)
-            mnbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
-
+            model_name_or_path = create_dir_selector(base_path=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), label="", showDirs=True)
     with gr.Row():
         training_stage = gr.Dropdown(choices=stages, value=stages[0], scale=0, min_width=200)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            dataset = gr.Dropdown(multiselect=False, allow_custom_value=True, 
-                                 value=initArgs.get("data_mount_dir", WORKSPACE), scale=8)
-            upbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+            dataset = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE), label="Dataset")
         with gr.Column(min_width=70):
             previewbtn: gr.Button = gr.Button(value="preview", min_width=70)
             editbtn: gr.Button = gr.Button(value="edit", min_width=70)
@@ -90,7 +87,6 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                  model=model, 
                  model_name_or_path=model_name_or_path, 
                  dataset=dataset, 
-                 upbtn=upbtn, 
                  previewbtn=previewbtn, 
                  editbtn=editbtn, 
                  num_train_epochs=num_train_epochs, 
@@ -121,14 +117,10 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
         with gr.Column(scale=4):
             with gr.Row():
                 with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-                    config_path = gr.Dropdown(label="config_path", multiselect=False, allow_custom_value=True, 
-                                             value=get_save_dir(f"train_{get_time()}"), scale=9)
-                    cfgpathbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+                    config_path = create_dir_selector(base_path=get_save_dir(f"train_{get_time()}"), label="config_path", showDirs=True)
             with gr.Row():
                 with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-                    output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, 
-                                             value=get_save_dir(f"train_{get_time()}"), scale=9)
-                    odirbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+                    output_dir = create_dir_selector(base_path=get_save_dir(f"train_{get_time()}"), label="output_dir", showDirs=True)
         with gr.Column(scale=2):
             loss_viewer = gr.Plot()
 
@@ -150,9 +142,7 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                  start_btn=start_btn, 
                  stop_btn=stop_btn, 
                  output_dir=output_dir, 
-                 odirbtn=odirbtn, 
                  config_path=config_path, 
-                 cfgpathbtn=odirbtn, 
                  progress_bar=progress_bar, 
                  system_prompt=system_prompt,
                  output_box=output_box, 
@@ -179,22 +169,13 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
 
     stop_btn.click(engine.runner.set_abort)
 
-    model_name_or_path.focus(list_dirs, [model_name_or_path], [model_name_or_path], queue=False)
-    mnbtn.click(updir, inputs=[model_name_or_path], outputs=[model_name_or_path], concurrency_limit=None)
 
-    dataset.focus(list_files, [dataset], [dataset], queue=False)
-    upbtn.click(updir, inputs=[dataset], outputs=[dataset], concurrency_limit=None)
 
     def update_model(mn):
         v = mlist[mn] if mlist and mn in mlist else ""
         return gr.update(value=v) if v else gr.update(visible=False),  \
                 gr.update(value=f"Selected model path: {v}")
     model.change(update_model, inputs=[model], outputs=[model_name_or_path, output_box])
-
-    output_dir.focus(list_files, [output_dir], [output_dir], queue=False)
-    odirbtn.click(updir, inputs=[output_dir], outputs=[output_dir], concurrency_limit=None)
-    config_path.focus(list_files, [config_path], [config_path], queue=False)
-    cfgpathbtn.click(updir, inputs=[config_path], outputs=[config_path], concurrency_limit=None)
 
     def update_config(stage):
         stage = TRAINING_STAGES[stage]  
