@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Dict
 from ...extras.packages import is_gradio_available
 from ..control import list_files, updir
 from ..common import get_save_dir, get_time
+from .selector import create_path_selector
 
 import gradio as gr
 if is_gradio_available():
@@ -35,8 +36,7 @@ def create_distill_tab(engine: "Engine") -> Dict[str, "Component"]:
 
     with gr.Row():
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            dataset_src_path = gr.Dropdown(multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-            upbtn: gr.Button = gr.Button(elem_classes=["overlay-button"], value="..", scale=0, min_width=20)
+            dataset_src_path = create_path_selector(base_path=initArgs.get("data_mount_dir", "/openr1_data"))
 
     with gr.Row():
         base_url = gr.Textbox(label="url",value="", scale=1)
@@ -46,7 +46,7 @@ def create_distill_tab(engine: "Engine") -> Dict[str, "Component"]:
         model = gr.Textbox(label="模型",value="DeepSeek-R1", scale=1)
        
     input_elems.update({dataset_src_path, api_key, base_url, model})
-    elem_dict.update(dict(dataset_src_path=dataset_src_path, upbtn=upbtn, api_key=api_key, base_url=base_url, model=model))
+    elem_dict.update(dict(dataset_src_path=dataset_src_path, api_key=api_key, base_url=base_url, model=model))
 
     with gr.Row():
         start_distill_btn = gr.Button()
@@ -55,8 +55,7 @@ def create_distill_tab(engine: "Engine") -> Dict[str, "Component"]:
     with gr.Row():
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
             sdir = get_save_dir(f"distill_{get_time()}")
-            output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, value=sdir, scale=9)
-            odirbtn: gr.Button = gr.Button(elem_classes=["overlay-button"], value="..", scale=0, min_width=20)
+            output_dir = create_path_selector(base_path=sdir, label="output_dir", showDirs=True)
             dataset_dst_path = gr.Textbox(label="dataset_dst_path", visible=False, value=sdir)
     with gr.Row():
         system_prompt = gr.Textbox(label="Prompt", visible=True, interactive=True, lines=10, scale=1, value=initArgs.get("system_prompt", ""))
@@ -68,7 +67,6 @@ def create_distill_tab(engine: "Engine") -> Dict[str, "Component"]:
         dict(
             output_dir=output_dir,
             dataset_dst_path=dataset_dst_path,
-            odirbtn=odirbtn,
             start_distill_btn=start_distill_btn,
             system_prompt=system_prompt,
             output_box=output_box,
@@ -76,12 +74,7 @@ def create_distill_tab(engine: "Engine") -> Dict[str, "Component"]:
         )
     )
 
-    dataset_src_path.focus(list_files, [dataset_src_path], [dataset_src_path], queue=False)
-    upbtn.click(updir, inputs=[dataset_src_path], outputs=[dataset_src_path], concurrency_limit=None)
-
-    output_dir.focus(list_files, [output_dir], [output_dir], queue=False)
     output_dir.change(lambda x: gr.update(value=x), inputs=[output_dir], outputs=[dataset_dst_path])
-    odirbtn.click(updir, inputs=[output_dir], outputs=[output_dir], concurrency_limit=None)
 
     def _run(*args):
         yield from engine.runner.run("distill", *args)

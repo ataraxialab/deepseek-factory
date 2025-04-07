@@ -5,6 +5,7 @@ from ...extras.packages import is_gradio_available
 from ...extras.packages import is_gradio_available
 from ..control import list_files, updir
 from .data2 import create_preview_box
+from .selector import create_path_selector
 import random
 import os
 import json
@@ -62,15 +63,13 @@ def create_segment_tab(engine: "Engine") -> Dict[str, "Component"]:
     elem_dict = dict()
 
     with gr.Row():
-        dataset = gr.Dropdown(label="Dataset", info="", multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-        upbtn= gr.Button(variant="secondary", value="..", scale=1)
+        dataset = create_path_selector(base_path=initArgs.get("data_mount_dir", "/openr1_data"), label="Dataset")
     with gr.Row():
         preview_elems = create_preview_box(dataset)
 
     elem_dict.update(
     dict(
         dataset=dataset,
-        upbtn=upbtn,
         **preview_elems
     )
     )
@@ -92,9 +91,6 @@ def create_segment_tab(engine: "Engine") -> Dict[str, "Component"]:
             cmd_segment_btn=cmd_segment_btn
         )
     )
-
-    dataset.focus(list_files, [dataset], [dataset], queue=False)
-    upbtn.click(updir, inputs=[dataset], outputs=[dataset], concurrency_limit=None)
 
     train_test_split_ratio.change(None, inputs=train_test_split_ratio, outputs=train_test_split_ratio, queue=False)
     cmd_segment_btn.click(segment_data, inputs=[dataset, train_test_split_ratio], outputs=[output_box, dataset_out], concurrency_limit=None)
