@@ -21,6 +21,7 @@ from .components import (
     create_dataprocess_tab,
     create_train_tab,
     create_eval_tab,
+    create_upload_tab
 )
 from .css import CSS
 from .engine import Engine
@@ -39,6 +40,9 @@ def create_ui(demo_mode: bool = False) -> "gr.Blocks":
         lang = gr.Dropdown(choices=["en", "zh"], value="en", visible=False)
         template = gr.Dropdown(choices=["qwen", "baichuan"], value="qwen", visible=False)
         engine.manager.add_elems("global", dict(lang=lang, template=template))
+
+        with gr.Tab("数据上传"):
+            engine.manager.add_elems("upload", create_upload_tab(engine))
 
         with gr.Tab("数据处理"):
             engine.manager.add_elems("dataprocess", create_dataprocess_tab(engine))

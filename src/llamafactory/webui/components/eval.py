@@ -41,7 +41,7 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
 
     with gr.Row():
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", value=mk, multiselect=False, scale=3)
+            model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", interactive=True, value=mk, multiselect=False, scale=3)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
             model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, 
                                              value=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), scale=7)

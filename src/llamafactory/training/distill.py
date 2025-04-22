@@ -13,69 +13,6 @@ SYSTEM_PROMPT = (
     "In the answer, only output the calculated number and yes or no, without including the process or any other explanations."
 )
 
-def filter(in_file: str, dataset_dst_path: str):
-    true_total = 0
-    correct = []
-    error = []
-    with open(in_file, "r", encoding="utf8") as f:
-        infs = f.readlines()
-    for i in range(len(infs)):
-        t = json.loads(infs[i])
-        #index = t["index"]
-        res = t["answer"]
-        thought = t["thought"]
-        question = t["question"]
-        gt = t["gt"]
-        
-        match = re.search(r'<answer>(.*?)</answer>', res)
-        reward = 0
-        if match:
-            answer_content = match.group(1).strip()  # 提取并去除前后空格
-            if gt == "yes" or gt == "no":
-                answer = answer_content.split(" ")
-                for j in answer:
-                    if j.lower() == gt:
-                        reward = 1.0
-                        break
-            else:
-                if len(answer_content.split(" ")) >= 5:
-                    reward = 0.0
-                else:
-                    answer_content = answer_content.replace("million", "").replace("billion", "").replace(",", "")
-                    try:
-                        if answer_content == gt:
-                            reward = 1.0
-                        elif "%" in answer_content:
-                            answer = float(answer_content.replace("%", ""))
-                            answer = answer / 100
-                            if abs(float(gt) - answer) < 0.001:
-                                reward = 1.0
-                        elif "$" in answer_content:
-                            answer = answer_content.replace("$", "")
-                            if abs(float(answer) - float(gt)) < 0.001:
-                                reward = 1.0
-                        elif abs(float(answer_content) - float(gt)) < 0.001:
-                            reward = 1.0
-                    except:
-                        pass
-        if reward == 1.0:
-            true_total += 1
-            correct.append({"question":question, "gt":gt, "answer": res, "thought":thought, "index": i})
-        else:
-            error.append({"question":question, "gt":gt, "answer": res, "thought":thought, "index": i})
-        
-    print("accuracy:", true_total / len(infs))
-
-    errfile = os.path.join(dataset_dst_path, "error.json")
-    correctfile = os.path.join(dataset_dst_path, "correct.json")
-    with open(errfile, "w", encoding="utf8") as f:
-        json.dump(error, f, ensure_ascii=False, indent=4)
-
-    with open(correctfile, "w", encoding="utf8") as f:
-        json.dump(correct, f, ensure_ascii=False, indent=4)
-
-    print(f"-- output: {correctfile}, {errfile}")
-
 def run_distill():
     import argparse
     parser = argparse.ArgumentParser()
@@ -108,8 +45,10 @@ def run_distill():
     print(f"system prompt: {system_prompt}")
     with open(dataset_src_path, "r", encoding="utf8") as f:
         data = json.load(f)
-    out_file = os.path.join(dataset_dst_path, "_distill.json")
+    name, ext = os.path.splitext(dataset_src_path)
+    out_file = f"{name}_distill{ext}"
 
+    outs = []
     for i in range(len(data)):
         print(i)
         question = data[i]["question"]
@@ -131,28 +70,28 @@ def run_distill():
         reasoning_content = ""
         answer_content = ""
         for chunk in response:
-            # 获取思考过程
-            if not getattr(chunk.choices[0].delta, "reasoning_content", None):
-                print(f"---- no reasoning content: {chunk.choices[0]} ",end="",flush=True)
-                break 
-            reasoning_chunk = chunk.choices[0].delta.reasoning_content
-            # 获取回复
-            answer_chunk = chunk.choices[0].delta.content
-            # 如果思考过程不为空，则打印思考过程
-            if reasoning_chunk != "" and reasoning_chunk != None:
-                print(reasoning_chunk,end="",flush=True)
-                reasoning_content += reasoning_chunk
-            # 如果回复不为空，则打印回复。回复一般会在思考过程结束后返回
-            elif answer_chunk != "" and answer_chunk != None:
-                print(answer_chunk,end="",flush=True)
-                answer_content += answer_chunk
-                
-        tmp = {"question": question, "gt": gt, "thought": reasoning_content, "answer": answer_content, "index": i}
-        with open(out_file, "a", encoding="utf8") as f:
-            json.dump(tmp, f)
-            f.write("\n")
+            if getattr(chunk.choices[0].delta, "reasoning_content", None):
+                reasoning_chunk = chunk.choices[0].delta.reasoning_content
+                if reasoning_chunk:
+                    print(reasoning_chunk,end="",flush=True)
+                    reasoning_content += reasoning_chunk
+            if getattr(chunk.choices[0].delta, "content", None):
+                answer_chunk = chunk.choices[0].delta.content
+                if answer_chunk:
+                    print(answer_chunk,end="",flush=True)
+                    answer_content += answer_chunk
 
-    filter(out_file, dataset_dst_path)
+        m = re.search(r'<answer>(.*?)</answer>', answer_content)
+        if m:
+            answer_content = m.group(1).strip()
+        tmp = {"question": question, "gt": gt, "thought": reasoning_content, "answer": answer_content, "index": i}
+        outs.append(tmp)
+
+    with open(out_file, "w", encoding="utf8") as f:
+        json.dump(outs, f)
+        f.write("\n")
+
+    print(f"output file: {out_file}")
 
     import time
     time.sleep(5)

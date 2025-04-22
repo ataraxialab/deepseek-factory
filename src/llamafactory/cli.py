@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import os
 from enum import Enum, unique
 
 from .extras import logging
@@ -23,8 +24,8 @@ USAGE = (
     "-" * 70
     + "\n"
     + "| Usage:                                                             |\n"
-    + "|   deepseekfactory-cli webui: launch LlamaBoard                        |\n"
-    + "|   deepseekfactory-cli version: show version info                      |\n"
+    + "|   deepseekfactory-cli webui: launch webui                          |\n"
+    + "|   deepseekfactory-cli version: show version info                   |\n"
     + "-" * 70
 )
 
@@ -47,8 +48,11 @@ class Command(str, Enum):
     ENV = "env"
     WEBUI = "webui"
     VER = "version"
+    DISTILL = "distill"
+    SFT = "sft"
+    RL = "rl"
+    EVAL = "eval"
     HELP = "help"
-
 
 def main():
     command = sys.argv.pop(1) if len(sys.argv) != 1 else Command.HELP
@@ -60,16 +64,16 @@ def main():
         print(WELCOME)
     elif command == Command.HELP:
         print(USAGE)
-    elif command == "dataprocess":
+    elif command == Command.DISTILL:
         from .training.distill import run_distill
         run_distill()
-    elif command == "sft":
-        from .training.sft_train import run_sft
+    elif command == Command.SFT:
+        from .training.sft import run_sft
         run_sft()
-    elif command == "rl":
-        from .training.grpo_train import run_grpo
+    elif command == Command.RL:
+        from .training.grpo import run_grpo
         run_grpo()
-    elif command == "eval":
+    elif command == Command.EVAL:
         from .training.inference import run_inference
         run_inference()
     else:

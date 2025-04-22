@@ -1,4 +1,4 @@
-# Copyright 2025 the LlamaFactory team.
+# Copyright 2025 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .dataprocess import create_dataprocess_tab
-from .train import create_train_tab
-from .eval import create_eval_tab
-from .upload import create_upload_tab
+from transformers.utils.import_utils import _is_package_available
 
-__all__ = [
-    "create_dataprocess_tab",
-    "create_train_tab",
-    "create_eval_tab",
-    "create_upload_tab",
-]
+
+# Use same as transformers.utils.import_utils
+_e2b_available = _is_package_available("e2b")
+
+
+def is_e2b_available() -> bool:
+    return _e2b_available

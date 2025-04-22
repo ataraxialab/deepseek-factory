@@ -1,10 +1,10 @@
 {
-  "data_mount_dir": "/openr1_data",
+  "data_mount_dir": "/workspace",
   "system_prompt": "A conversation between User and Assistant. The user asks a question, and the Assistant solves it.\nThe assistant first thinks about the reasoning process in the mind and then provides the user with the answer.\nThe reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e.\n<think> reasoning process here </think><answer> answer here </answer>.\nIn the answer, only output the calculated number and yes or no, without including the process or any other explanations.",
   "models": {
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": "/openr1_data/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-    "Llama/Meta-Llama-3.1-8B-Instruct": "/openr1_data/Llama/Meta-Llama-3.1-8B-Instruct",
-    "Qwen2.5-1.5B-Instruct": "/openr1_data/Qwen/Qwen2.5-1.5B-Instruct"
+    "DeepSeek-R1-Distill-Qwen-7B": "/mnt/sys-models-storage/models/DeepSeek-R1-Distill-Qwen-7B",
+    "Meta-Llama-3.1-8B-Instruct": "/mnt/sys-models-storage/models/Meta-Llama-3.1-8B-Instruct",
+    "Qwen2.5-1.5B-Instruct": "/mnt/sys-models-storage/models/Qwen2.5-1.5B-Instruct"
   },
   "dataprocess": {
     "hp": {
@@ -59,17 +59,16 @@
       "save_steps": 100,
       "seed": 3407,
       "max_grad_norm": 0.1,
-      "report_to": "tensorboard",
       "output_dir": "output",
       "save_strategy": "steps"
     }
   },
   "rl": {
     "hp": {
-      "max_seq_length": 4096,
+      "max_seq_length": 2048,
       "lora_rank": 32,
       "lora_alpha": 32,
-      "gpu_memory_utilization": 0.7,
+      "gpu_memory_utilization": 0.6,
       "random_state": 3407,
       "dataset": "/data/FINQA_json/train.json",
       "model_name_or_path": "/data/sft_train/output_ckpt_res",
@@ -85,10 +84,10 @@
       "optim": "paged_adamw_8bit",
       "logging_strategy": "steps",
       "logging_steps": 1,
-      "per_device_train_batch_size": 1,
-      "gradient_accumulation_steps": 8,
-      "num_generations": 3,
-      "max_prompt_length": 2048,
+      "per_device_train_batch_size": 3,
+      "gradient_accumulation_steps": 1,
+      "num_generations": 1,
+      "max_prompt_length": 1024,
       "num_train_epochs": 1,
       "save_steps": 50,
       "max_grad_norm": 0.1,

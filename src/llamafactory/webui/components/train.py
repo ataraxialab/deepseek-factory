@@ -45,17 +45,17 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
 
     with gr.Row():
         with gr.Column(scale=4, elem_classes=["dropdown-button-container"]):
-            model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", value=mk, 
-                                multiselect=False, scale=3)
+            model = gr.Dropdown(choices=list(mlist.keys()) if mlist else [], label="Model Name", interactive=True, value=mk, multiselect=False, scale=3)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
             model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, 
                                              value=mv if mv else initArgs.get("data_mount_dir", WORKSPACE), scale=7)
             mnbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+            model_sft = gr.Dropdown(multiselect=False, allow_custom_value=True, value="", visible=False)
 
     with gr.Row():
         training_stage = gr.Dropdown(choices=stages, value=stages[0], scale=0, min_width=200)
         with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            dataset = gr.Dropdown(multiselect=False, allow_custom_value=True, 
+            dataset_name = gr.Dropdown(multiselect=False, allow_custom_value=True, 
                                  value=initArgs.get("data_mount_dir", WORKSPACE), scale=8)
             upbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
         with gr.Column(min_width=70):
@@ -63,7 +63,7 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
             editbtn: gr.Button = gr.Button(value="edit", min_width=70)
 
     with gr.Row():
-        preview_elems = create_preview_box(dataset, previewbtn, editbtn)
+        preview_elems = create_preview_box(dataset_name, previewbtn, editbtn)
 
     def default_v(key: str, df: Any):
         if not s0cfg or not isinstance(s0cfg, dict):
@@ -79,9 +79,9 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
             gradient_accumulation_steps = gr.Textbox(value=default_v("gradient_accumulation_steps", 4))
             logging_steps = gr.Textbox(value=default_v("logging_steps", 1))
         
-    params.update({training_stage, learning_rate, per_device_train_batch_size, model_name_or_path, dataset, num_train_epochs, 
+    params.update({training_stage, learning_rate, per_device_train_batch_size, model_name_or_path, dataset_name, num_train_epochs, 
                         gradient_accumulation_steps, logging_steps})
-    params_keys = {"training_stage", "learning_rate", "per_device_train_batch_size", "model_name_or_path", "dataset", "num_train_epochs", 
+    params_keys = {"training_stage", "learning_rate", "per_device_train_batch_size", "model_name_or_path", "dataset_name", "num_train_epochs", 
                         "gradient_accumulation_steps", "logging_steps", "config_path", "output_dir", "system_prompt"}
     elem_dict.update(
             dict(training_stage=training_stage, 
@@ -89,7 +89,8 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                  per_device_train_batch_size=per_device_train_batch_size, 
                  model=model, 
                  model_name_or_path=model_name_or_path, 
-                 dataset=dataset, 
+                 model_sft=model_sft,
+                 dataset_name=dataset_name, 
                  upbtn=upbtn, 
                  previewbtn=previewbtn, 
                  editbtn=editbtn, 
@@ -129,13 +130,14 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                     output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, 
                                              value=get_save_dir(f"train_{get_time()}"), scale=9)
                     odirbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+                    output_dir_sft = gr.Dropdown(multiselect=False, allow_custom_value=True, value="", visible=False)
         with gr.Column(scale=2):
             loss_viewer = gr.Plot()
 
     with gr.Row():
         progress_bar = gr.Slider(visible=False, interactive=False)
     with gr.Row():
-        system_prompt = gr.Textbox(label="Prompt", interactive=True, lines=5, value=default_v("system_prompt", ""))
+        system_prompt = gr.Textbox(label="Prompt", interactive=True, lines=5, value=initArgs.get("system_prompt", ""))
     with gr.Row():
         output_box = gr.Markdown(elem_classes="scroll-box")
 
@@ -149,7 +151,8 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                  arg_load_btn=arg_load_btn, 
                  start_btn=start_btn, 
                  stop_btn=stop_btn, 
-                 output_dir=output_dir, 
+                 output_dir=output_dir,
+                 output_dir_sft=output_dir_sft,
                  odirbtn=odirbtn, 
                  config_path=config_path, 
                  cfgpathbtn=odirbtn, 
@@ -182,8 +185,8 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
     model_name_or_path.focus(list_dirs, [model_name_or_path], [model_name_or_path], queue=False)
     mnbtn.click(updir, inputs=[model_name_or_path], outputs=[model_name_or_path], concurrency_limit=None)
 
-    dataset.focus(list_files, [dataset], [dataset], queue=False)
-    upbtn.click(updir, inputs=[dataset], outputs=[dataset], concurrency_limit=None)
+    dataset_name.focus(list_files, [dataset_name], [dataset_name], queue=False)
+    upbtn.click(updir, inputs=[dataset_name], outputs=[dataset_name], concurrency_limit=None)
 
     def update_model(mn):
         v = mlist[mn] if mlist and mn in mlist else ""
@@ -196,7 +199,7 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
     config_path.focus(list_files, [config_path], [config_path], queue=False)
     cfgpathbtn.click(updir, inputs=[config_path], outputs=[config_path], concurrency_limit=None)
 
-    def update_config(stage):
+    def update_config(stage, mn, mn_sft, odir, odir_sft):
         stage = TRAINING_STAGES[stage]  
         params = _load_init_args(initArgs.get(f"{stage}", {}).get("hp", {}))
         return gr.update(value=get_init_config(initArgs, f"{stage}.hp.learning_rate", 1.0e-5)), \
@@ -204,15 +207,19 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                gr.update(value=get_init_config(initArgs, f"{stage}.hp.per_device_train_batch_size", 1)), \
                gr.update(value=get_init_config(initArgs, f"{stage}.hp.gradient_accumulation_steps", 1)), \
                gr.update(value=get_init_config(initArgs, f"{stage}.hp.logging_steps", 1)), \
-               gr.update(value=params)
+               gr.update(value=params), \
+               gr.update(value=odir) if stage == "rl" else (gr.update(value=mn_sft) if mn_sft else gr.update(visible=True)), \
+               gr.update(value=mn) if stage == "rl" else gr.update(visible=False), \
+               gr.update(value=f"{odir}_rl") if stage == "rl" else (gr.update(value=odir_sft) if odir_sft else gr.update(visible=True)), \
+               gr.update(value=f"{odir}") if stage == "rl" else gr.update(visible=False)
 
-    training_stage.change(update_config, inputs=[training_stage],
+    training_stage.change(update_config, inputs=[training_stage, model_name_or_path, model_sft, output_dir, output_dir_sft],
             outputs=[learning_rate, 
                      num_train_epochs, 
                      per_device_train_batch_size, 
                      gradient_accumulation_steps, 
                      logging_steps, 
-                     more_params], 
+                     more_params, model_name_or_path, model_sft, output_dir, output_dir_sft], 
             queue=False)
 
     return elem_dict
