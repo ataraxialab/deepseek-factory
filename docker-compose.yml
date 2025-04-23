@@ -1,0 +1,39 @@
+services:
+  deepseekfactory:
+    build:
+      dockerfile: ./Dockerfile
+      context: ./
+      args:
+        INSTALL_DEEPSPEED: false
+        PIP_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
+        MACA_VERSION: "2.29.0.3"
+    image: metax-deepseek-factory:v1.0
+    container_name: deepseekfactory
+    volumes:
+      - ${LOCAL_PATH}:/training_dir
+    ports:
+      - "7860:7860"
+      - "8000:8000"
+    ipc: host
+    network_mode: host
+    privileged: true
+    tty: true
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+    shm_size: '100gb'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack:
+        soft: 67108864
+        hard: 67108864
+    stdin_open: true
+    command: bash
+    group_add:
+      - video
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/mxcd:/dev/mxcd
+    restart: unless-stopped

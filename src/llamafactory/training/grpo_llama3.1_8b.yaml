@@ -1,0 +1,35 @@
+## scripts_args:
+max_seq_length: 4096
+lora_rank: 32
+lora_alpha: 32
+gpu_memory_utilization: 0.7
+random_state: 3407
+dataset_name: /unsloth/hudong/data/FINQA_json/train.json
+
+## model_args:
+model_name_or_path: /unsloth/hudong/unsloth_train/sft_train/output_ckpt_res
+
+## training_args
+use_vllm: True # use vLLM for fast inference!
+learning_rate: 1e-6 
+adam_beta1: 0.9
+adam_beta2: 0.99
+weight_decay: 0.1 
+warmup_ratio: 0.1
+bf16: True
+fp16: False
+lr_scheduler_type: cosine
+optim: paged_adamw_8bit
+logging_strategy: "steps"
+logging_steps: 1
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8 # Increase to 4 for smoother training
+num_generations: 3 # Decrease if out of memory
+max_prompt_length:  2048 #4096
+num_train_epochs: 1
+save_steps: 50
+# max_steps: 2
+max_grad_norm: 0.1
+report_to: ["tensorboard"] # Can use Weights & Biases
+output_dir: output
+save_strategy: "steps"

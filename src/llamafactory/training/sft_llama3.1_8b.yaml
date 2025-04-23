@@ -1,0 +1,28 @@
+## scripts_args:
+max_seq_length: 4096
+lora_rank: 32
+lora_alpha: 32
+random_state: 3047
+dataset_name: /unsloth/hudong/data/FINQA_distill/distill_correct.json
+
+## model_args:
+model_name_or_path: /models/Meta-Llama-3.1-8B-Instruct
+
+## training_args
+learning_rate: 1e-5 
+weight_decay: 0.0001
+warmup_ratio: 0.1
+bf16: True
+fp16: False
+logging_strategy: "steps"
+logging_steps: 1
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 4 #
+num_train_epochs: 3
+save_steps: 100
+seed: 3407
+max_grad_norm: 0.1
+# max_steps: 2
+report_to: ["tensorboard"] # Can use Weights & Biases
+output_dir: output
+save_strategy: "steps"
