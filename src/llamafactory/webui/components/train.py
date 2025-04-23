@@ -17,6 +17,8 @@ from ...extras.constants import TRAINING_STAGES
 from ...extras.packages import is_gradio_available
 from ..control import list_files, updir, dump_cfg
 from ..common import get_save_dir, get_time
+from .selector import create_dir_selector
+from ..common import WORKSPACE
 
 import gradio as gr
 if is_gradio_available():
@@ -38,15 +40,11 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
     rlcfg = initArgs.get("rl", {}).get("hp", {})
 
     with gr.Row():
-        with gr.Column(scale=4, elem_classes=["dropdown-button-container"]):
-            model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-            modelupbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
-            model_sft = gr.Dropdown(multiselect=False, allow_custom_value=True, value="", visible=False)
+        model_name_or_path = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE))
+        model_sft = gr.Dropdown(multiselect=False, allow_custom_value=True, value="", visible=False)
 
     with gr.Row():
-        with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            dataset= gr.Dropdown(multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-            upbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+        dataset = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE))
 
     with gr.Row():
         training_stage = gr.Dropdown(choices=stages, value=stages[0])
@@ -85,9 +83,8 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                 progress_bar = gr.Slider(visible=False, interactive=False)
             with gr.Row():
                 with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-                    output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, value=get_save_dir(f"train_{get_time()}"), scale=9)
+                    output_dir = create_dir_selector(base_path=get_save_dir(f"train_{get_time()}"))
                     output_dir_sft = gr.Dropdown(multiselect=False, allow_custom_value=True, value="", visible=False)
-                    odirbtn= gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
             with gr.Row():
                 system_prompt = gr.Textbox(label="Prompt", interactive=True, lines=5, value=initArgs.get("system_prompt", ""))
         with gr.Column(scale=1):
@@ -107,8 +104,6 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
         "warmup_ratio": warmup_ratio,
         "per_device_train_batch_size": per_device_train_batch_size,
         "model_sft": model_sft,
-        "modelupbtn": modelupbtn,
-        "upbtn": upbtn,
         "num_train_epochs": num_train_epochs,
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "save_steps": save_steps,
@@ -123,7 +118,6 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
         "progress_bar": progress_bar,
         "output_dir": output_dir,
         "output_dir_sft": output_dir_sft,
-        "odirbtn": odirbtn,
         "system_prompt": system_prompt,
         "loss_viewer": loss_viewer,
         "output_box": output_box,
@@ -153,18 +147,9 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
     start_btn.click(_run, input_elems, output_elems)
     stop_btn.click(engine.runner.set_abort)
 
-    model_name_or_path.focus(list_files, [model_name_or_path], [model_name_or_path], queue=False)
-    modelupbtn.click(updir, inputs=[model_name_or_path], outputs=[model_name_or_path], concurrency_limit=None)
-
-    dataset.focus(list_files, [dataset], [dataset], queue=False)
-    upbtn.click(updir, inputs=[dataset], outputs=[dataset], concurrency_limit=None)
-
-    output_dir.focus(list_files, [output_dir], [output_dir], queue=False)
-    odirbtn.click(updir, inputs=[output_dir], outputs=[output_dir], concurrency_limit=None)
-
     def update_config(stage, ds, ds_sft, odir, odir_sft):
         s = TRAINING_STAGES[stage]
-        cfg = sftcfg if s == "sfg" else rlcfg
+        cfg = sftcfg if s == "sft" else rlcfg
 
         return gr.update(value=cfg.get("num_train_epochs", 3)), \
                gr.update(value=cfg.get("save_steps", 100)), \
@@ -185,7 +170,7 @@ def create_train_tab(engine: "Engine") -> Dict[str, "Component"]:
                gr.update(value=ds) if s == "rl" else gr.update(visible=False), \
                gr.update(value=f"{odir}_rl") if s == "rl" else (gr.update(value=odir_sft) if odir_sft else gr.update(visible=True)), \
                gr.update(value=f"{odir}") if s == "rl" else gr.update(visible=False), \
-               gr.update(value=dump_cfg(sftcfg if s == "sfg" else rlcfg, input_elems_keys))
+               gr.update(value=dump_cfg(sftcfg if s == "sft" else rlcfg, input_elems_keys))
 
     training_stage.change(update_config, inputs=[training_stage, model_name_or_path, model_sft, output_dir, output_dir_sft],
             outputs=[num_train_epochs,

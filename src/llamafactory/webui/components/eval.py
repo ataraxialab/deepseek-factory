@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Dict, Any
 from ...extras.packages import is_gradio_available
 from ..control import list_files, updir, dump_cfg
 from ..common import get_save_dir, get_time
+from .selector import create_dir_selector
+from ..common import WORKSPACE
 
 import gradio as gr
 if is_gradio_available():
@@ -35,17 +37,13 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
 
     evalcfg = initArgs.get("eval", {}).get("hp", {})
     with gr.Row():
-        with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            model_name_or_path = gr.Dropdown(multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-            modelupbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+        model_name_or_path = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE))
 
     with gr.Row():
-        with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            eval_dataset = gr.Dropdown(multiselect=False, allow_custom_value=True, value=initArgs.get("data_mount_dir", "/openr1_data"), scale=9)
-            upbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+        eval_dataset = create_dir_selector(base_path=initArgs.get("data_mount_dir", WORKSPACE))
 
     input_elems.update({eval_dataset, model_name_or_path})
-    elem_dict.update(dict( eval_dataset=eval_dataset, upbtn=upbtn, model_name_or_path=model_name_or_path, modelupbtn=modelupbtn))
+    elem_dict.update(dict( eval_dataset=eval_dataset, model_name_or_path=model_name_or_path))
     
     with gr.Row():
         cmd_preview_btn = gr.Button()
@@ -56,10 +54,7 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
         progress_bar = gr.Slider(interactive=False, visible=False)
 
     with gr.Row():
-        with gr.Column(scale=9, elem_classes=["dropdown-button-container"]):
-            output_dir = gr.Dropdown(label="output_dir", multiselect=False, allow_custom_value=True, 
-                                     value=get_save_dir(f"eval_{get_time()}"), scale=9)
-            odirbtn = gr.Button(elem_classes=["overlay-button"], variant="secondary", value="..", scale=0, min_width=20)
+        output_dir = create_dir_selector(base_path=get_save_dir(f"eval_{get_time()}"))
     with gr.Row():
         system_prompt = gr.Textbox(label="Prompt", visible=True, interactive=True, lines=10, scale=1, value=initArgs.get("system_prompt", ""))
     with gr.Row():
@@ -73,7 +68,6 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
             stop_btn=stop_btn,
             progress_bar=progress_bar,
             output_dir=output_dir,
-            odirbtn=odirbtn,
             system_prompt=system_prompt,
             output_box=output_box,
         )
@@ -85,15 +79,6 @@ def create_eval_tab(engine: "Engine") -> Dict[str, "Component"]:
     elem_dict.update({"more_params": more_params})
 
     output_elems = [output_box, progress_bar]
-
-    eval_dataset.focus(list_files, [eval_dataset], [eval_dataset], queue=False)
-    upbtn.click(updir, inputs=[eval_dataset], outputs=[eval_dataset], concurrency_limit=None)
-
-    output_dir.focus(list_files, [output_dir], [output_dir], queue=False)
-    odirbtn.click(updir, inputs=[output_dir], outputs=[output_dir], concurrency_limit=None)
-
-    model_name_or_path.focus(list_files, [model_name_or_path], [model_name_or_path], queue=False)
-    modelupbtn.click(updir, inputs=[model_name_or_path], outputs=[model_name_or_path], concurrency_limit=None)
 
     def _preview(*args):
         yield from engine.runner.preview("eval", *args)
